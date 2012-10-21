@@ -1,0 +1,63 @@
+<comunita>
+	<catecumeno>
+      <nome>Mary</nome>
+      <cognome>Jane</cognome>
+      <abitazione>Hollywood Blvd.</abitazione>
+      <sesso>donna</sesso>
+      <coniuge>Lucky Luke</coniuge>
+      <macchina>true</macchina>
+      <casa>true</casa>
+      <bambini>false</bambini>
+      <disponibile>true</disponibile>
+    </catecumeno><catecumeno>
+      <nome>Lucky</nome>
+      <cognome>Luke</cognome>
+      <abitazione>Hollywood Blvd.</abitazione>
+      <sesso>uomo</sesso>
+      <coniuge>Mary Jane</coniuge>
+      <macchina>true</macchina>
+      <casa>true</casa>
+      <bambini>false</bambini>
+      <disponibile>true</disponibile>
+    </catecumeno><catecumeno>
+      <nome>Ivan</nome>
+      <cognome>Hoe</cognome>
+      <abitazione>Piazza delle Pizze</abitazione>
+      <sesso>uomo</sesso>
+      <coniuge>nessuno</coniuge>
+      <macchina>true</macchina>
+      <casa>false</casa>
+      <bambini>false</bambini>
+      <disponibile>false</disponibile>
+    </catecumeno><catecumeno>
+      <nome>Carl</nome>
+      <cognome>Lewis</cognome>
+      <abitazione>V. Ronde</abitazione>
+      <sesso>uomo</sesso>
+      <coniuge>nessuno</coniuge>
+      <macchina>true</macchina>
+      <casa>true</casa>
+      <bambini>false</bambini>
+      <disponibile>false</disponibile>
+    </catecumeno><catecumeno>
+      <nome>Lucy</nome>
+      <cognome>Torwald</cognome>
+      <abitazione>Via P. Del Melo 33</abitazione>
+      <sesso>donna</sesso>
+      <coniuge>Perry Mason</coniuge>
+      <macchina>true</macchina>
+      <casa>true</casa>
+      <bambini>true</bambini>
+      <disponibile>true</disponibile>
+    </catecumeno><catecumeno>
+      <nome>Perry</nome>
+      <cognome>Mason</cognome>
+      <abitazione>Via P. Del Melo 33</abitazione>
+      <sesso>uomo</sesso>
+      <coniuge>Lucy Torwald</coniuge>
+      <macchina>true</macchina>
+      <casa>true</casa>
+      <bambini>true</bambini>
+      <disponibile>true</disponibile>
+    </catecumeno>
+    </comunita>

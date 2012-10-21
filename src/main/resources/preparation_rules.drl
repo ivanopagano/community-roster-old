@@ -1,0 +1,234 @@
+#created on: Jul 2, 2011
+package it.sireneo.roster
+
+#list any import classes here.
+import it.sireneo.roster.model.*
+import it.sireneo.roster.controls.rules.State
+import it.sireneo.roster.controls.rules.RuleEngineHelper
+import it.sireneo.roster.controls.CommunityLoader
+import org.drools.QueryResults
+import org.drools.QueryResult
+
+#declare any global variables here
+
+rule "Start the process on initial state for liturgy preparation"
+	when
+		$state : State( state == "INIT")
+	then 
+		modify ($state) {
+			setState("RUNNING")
+		}
+end
+
+rule "Start the process on initial state for psalm groups"
+	when
+		$state : State( state == "INIT_PSALM")
+	then 
+		modify ($state) {
+			setState("RUN_PSALM")
+		}
+end
+
+
+//LITURGY RULES
+     
+rule "While runnning and there are liturgy preparations missing a car, add a driver"
+    no-loop
+	when
+		State( state == "RUNNING" )
+		$c : Cathecumen( assigned == false, available, hasCar )
+		$p : Preparation( !hasDriver() )
+		not ( exists ( Preparation( cardinal < $p.cardinal, full == false ) ) )
+		not ( exists ( Preparation( Math.abs(cardinal() - $p.cardinal()) < 5, partecipants().contains($c) ) ) )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+rule "While runnning and there are liturgy preparations missing a house to meet, and there's a possible free host add her"
+    no-loop
+	when
+		State( state == "RUNNING" )
+		$c : Cathecumen( assigned == false, available, canHost )
+		$p : Preparation( hasHost() == false )
+		not ( exists ( Preparation( cardinal < $p.cardinal, full == false ) ) )
+		not ( exists ( Preparation( Math.abs(cardinal() - $p.cardinal()) < 5, partecipants().contains($c) ) ) )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+		
+		
+
+rule "While runnning and there are liturgy preparations missing some member, add to it, checking the children's limit"
+	salience -10
+    no-loop
+	when
+		State( state == "RUNNING" )
+		$c : Cathecumen( assigned == false , available )
+		$p : Preparation( hasDriver(), full == false )
+		not ( exists ( Preparation( cardinal < $p.cardinal, full == false ) ) )
+		not ( exists ( Preparation( Math.abs(cardinal() - $p.cardinal()) < 5, partecipants().contains($c) ) ) )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+rule "Stop when all the preparations are full"
+	when
+		$s : State( state == "RUNNING" )
+		forall ( Preparation( full ) )
+	then
+		modify($s) {
+			setState("CHECKING");
+		}
+end
+
+//PSALM
+
+rule "Insert more preparations for psalm groups when all existing are full and community members are unassigned"
+	salience 50
+	no-loop 
+	when
+		$s : State( state == "RUN_PSALM" )
+		forall ( Preparation( full ) )
+		exists ( Cathecumen ( assigned == false, available ) )
+	then
+		insert( RuleEngineHelper.psalmGroup() );
+end
+
+rule "While runnning and there are psalm groups missing a car, add a driver"
+    no-loop
+	when
+		State( state == "RUN_PSALM" )
+		$c : Cathecumen( assigned == false, available, hasCar )
+		$p : Preparation( !hasDriver() )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+rule "While runnning and there are psalm groups missing a house to meet, and there's a possible free host add her"
+    no-loop
+	when
+		State( state == "RUN_PSALM" )
+		$c : Cathecumen( assigned == false, available, canHost )
+		$p : Preparation( hasHost() == false )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+rule "While runnning and there are psalm groups missing some member, add to it, checking the children's limit"
+	salience -10
+    no-loop
+	when
+		State( state == "RUN_PSALM" )
+		$c : Cathecumen( assigned == false , available )
+		$p : Preparation( hasDriver(), full == false )
+		eval ( !($c.hasChildren() && $p.hasChildren()) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+end
+
+rule "Stop when all the members are assigned"
+	when
+		$s : State( state == "RUN_PSALM" )
+		forall ( Cathecumen( assigned ) )
+	then
+		modify($s) {
+			setState("FINISHED");
+		}
+end
+
+//COMMONS
+
+rule "While runnning and a spouse is assigned, search for the partner and assign her to the same group, liturgy prepare"
+	salience 10
+    no-loop
+	when
+		$s : State( state in ("RUNNING", "CHECKING") )
+		$c : Cathecumen( assigned == false, available, married )
+		$p : Preparation(  )
+		$partner : Cathecumen( married )
+		eval( $p.partecipants().contains($partner) )
+		eval ( $partner.isMarriedTo($c) )
+	then
+		if ($p.partecipants().size() < 7) {
+			RuleEngineHelper.addToPreparation($c, $p);
+			if ($c.assigned()) {
+				modify($p) {};
+				modify($c) {};
+			}
+		} else {
+			//troppi, toglie anche il coniuge
+			RuleEngineHelper.removeFromPreparation($partner, $p);		
+			modify($p) {};
+			modify($c) {};
+		}
+		if ($s.getState().equals("CHECKING")) {
+			modify($s) {
+				setState("FINISHED");
+			}
+		}
+end
+
+rule "While runnning and a spouse is assigned, search for the partner and assign her to the same group, psalm prepare"
+	salience 10
+    no-loop
+	when
+		$s : State( state in ("RUN_PSALM", "CHECKING") )
+		$c : Cathecumen( assigned == false, available, married )
+		$p : Preparation(  )
+		$partner : Cathecumen( married )
+		eval( $p.partecipants().contains($partner) )
+		eval ( $partner.isMarriedTo($c) )
+	then 
+		RuleEngineHelper.addToPreparation($c, $p);
+		if ($c.assigned()) {
+			modify($p) {};
+			modify($c) {};
+		}
+		if ($s.getState().equals("CHECKING")) {
+			modify($s) {
+				setState("FINISHED");
+			}
+		}
+end
+
+query "all assigned members"
+    $member : Cathecumen( assigned )
+end
+
+query "unfinished preparations"
+    $preparation : Preparation( full == false )
+end
+
+query "all preparations"
+    $preparation : Preparation( )
+end
